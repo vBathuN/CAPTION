@@ -2,31 +2,19 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Premium Caption Ticker</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.0.2/anime.min.js"></script>
     <style>
-        /* 1. LawTamil Premium Design & Fonts */
         @font-face {
             font-family: 'Tamil039';
             src: url('https://www.rtbs.in/font/Tamil039.woff2') format('woff2');
             font-weight: bold;
         }
-
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: transparent;
-            overflow: hidden;
-            display: flex;
-            align-items: flex-end;
-            height: 100vh;
-        }
-
-        /* உங்கள் அசல் பிளாக்கர் டிக்கர் பெட்டி */
+        body { margin: 0; padding: 0; background: transparent; overflow: hidden; display: flex; align-items: flex-end; height: 100vh; }
+        
         .ticker-container {
             width: 1200px;
             margin: 0 auto 40px auto;
-            background-color: #c60203; /* LawTamil Red */
+            background-color: #c60203; 
             border: 4px solid #ffffff;
             border-radius: 15px;
             padding: 25px;
@@ -46,13 +34,7 @@
             width: 100%;
         }
 
-        /* 3D அனிமேஷனுக்கான ஸ்டைல் */
-        .word { 
-            display: inline-block; 
-            transform-origin: 0 0; 
-            margin-right: 0.25em; 
-            opacity: 0;
-        }
+        .word { display: inline-block; transform-origin: 0 0; margin-right: 0.25em; opacity: 0; }
     </style>
 </head>
 <body>
@@ -62,19 +44,14 @@
     </div>
 
     <script>
-        // 2. URL-லிருந்து Room ID மற்றும் செட்டிங்ஸ் பெறுதல்
         var urlParams = new URLSearchParams(window.location.search);
         var roomID = urlParams.get("room") || "RTCSliveDemo";
-        var timeoutSpeed = parseInt(urlParams.get("showtime")) || 5000;
-        
-        var idle = null;
         var outputDiv = document.getElementById("output");
+        var lastFinalText = "";
 
-        // 3. Caption Ninja WebSocket இணைப்பு
         var socket = new WebSocket("wss://api.caption.ninja:443");
 
         socket.onopen = function () {
-            console.log("Connected to room: " + roomID);
             socket.send(JSON.stringify({"join": roomID}));
         }
 
@@ -82,27 +59,21 @@
             if (event.data) {
                 var data = JSON.parse(event.data);
                 
-                // Final டெக்ஸ்ட் வரும்போது அனிமேஷனுடன் காட்டுதல்
-                if (data.final) {
+                // Final டெக்ஸ்ட் வரும்போது மட்டும் அனிமேஷன்
+                if (data.final && data.final !== lastFinalText) {
+                    lastFinalText = data.final;
                     processWithAnimation(data.final);
-                } 
-                // Interm டெக்ஸ்ட் (பேசும் போதே வருவது) - அனிமேஷன் இன்றி லேசாகக் காட்ட
-                else if (data.interm) {
-                    // தற்காலிகமாக எதையும் காட்ட விரும்பினால் இங்கே சேர்க்கலாம்
                 }
             }
         };
 
-        // 4. உங்கள் பிளாக்கர் டிக்கர் வித்தை (Animation Logic)
         function processWithAnimation(text) {
-            // பழைய டெக்ஸ்ட் மறையாமல் இருக்க 6 வரிகள் லாஜிக் தேவைப்பட்டால் இங்கே சேர்க்கலாம்
-            // இப்போதைக்கு அசல் பிளாக்கர் டிக்கர் போல வார்த்தைகளை அனிமேட் செய்கிறோம்
-            
+            // பழையதை அழித்துவிட்டு புதியதை மட்டும் அனிமேட் செய்கிறது
+            // (இங்கே Timeout எதுவும் இல்லை, அதனால் அடுத்த டெக்ஸ்ட் வரும் வரை இது அப்படியே இருக்கும்)
             outputDiv.innerHTML = text.split(' ').map(word => {
                 return `<span class='word'>${word}</span>`;
             }).join(' ');
 
-            // Anime.js 3D Flip Effect
             anime.timeline({loop: false})
                 .add({
                     targets: '.word',
@@ -112,14 +83,6 @@
                     easing: "easeOutExpo",
                     delay: (el, i) => 40 * i
                 });
-
-            // தானாக மறையும் வசதி (Timeout)
-            if (idle) clearTimeout(idle);
-            if (timeoutSpeed) {
-                idle = setTimeout(function() {
-                    outputDiv.innerHTML = "";
-                }, timeoutSpeed);
-            }
         }
 
         socket.onclose = function () {
